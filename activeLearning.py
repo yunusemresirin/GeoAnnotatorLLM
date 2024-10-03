@@ -1,9 +1,11 @@
 from unsloth import FastLanguageModel, is_bfloat16_supported
 from transformers import TrainingArguments
 from datasets import load_dataset
+from trl import SFTTrainer
+
+from utilFunctions import clearGGUFDir
 from pydantic import BaseModel
 from fastapi import APIRouter
-from trl import SFTTrainer
 import json
 
 class TrainingRequest(BaseModel):
@@ -11,6 +13,10 @@ class TrainingRequest(BaseModel):
     provider: dict
 
 router = APIRouter()
+
+@router.get("/test")
+def test():
+    return "Success!"
 
 @router.post("/retrain")
 def retrain_model(request: TrainingRequest):
@@ -26,7 +32,7 @@ def retrain_model(request: TrainingRequest):
     model = FastLanguageModel.get_peft_model(
         model,
         r = 16,
-        target_modules = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj", "embed_tokens", "lm_head"],
+        target_modules = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
         lora_alpha = 16,
         lora_dropout = 0,
         bias = "none",
@@ -99,6 +105,13 @@ def retrain_model(request: TrainingRequest):
 
     # Modell speichern
     model.save_pretrained_gguf(f"models/{model_name}/gguf", tokenizer, quantization_method = "q4_k_m")
+    
+    # Clear GGUF-directory except quantization file
+    clearGGUFDir(GGUF_PATH)
+
+    # Save model configuration and tokenizer 
+    model.save_pretrained(MODEL_PATH)
+    tokenizer.save_pretrained(MODEL_PATH)
     
     model.save_pretrained_merged(f"models/{model_name}", tokenizer, save_method = "merged_4bit")
 
