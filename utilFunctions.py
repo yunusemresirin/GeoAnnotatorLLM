@@ -1,6 +1,15 @@
 import os
+import shutil
 
-def clearGGUFDir(gguf_path: str, quantization: str) -> None:
+def clearGGUFDir(gguf_path: str, quantization: str="q4_k_m") -> None:
+    r"""
+    Remove unused files when converting model to GGUF-file
+
+    Args:
+    - gguf_path (str): path to gguf-file of specific model
+    - quantization (str): quantization method for converting model
+    """
+
     allowed_quantizations=[
         "not_quantized",
         "fast_quantized",
@@ -39,3 +48,16 @@ def clearGGUFDir(gguf_path: str, quantization: str) -> None:
                 print(f"Deletion of file {filename} failed. Cause: {e}")
 
     print("Deletion process completed!")
+
+def clearMainDir() -> None:
+    r"""
+    Remove temporary folders by unsloth and checkpoints of the SFTTrainer
+    """
+    
+    parent_dir = os.path.dirname(os.path.abspath(__file__))
+    for folder_name in os.listdir(parent_dir):
+        folder_path = os.path.join(parent_dir, folder_name)
+        
+        if os.path.isdir(folder_path) and any(sub in folder_name for sub in ["unsloth", "outputs"]):
+            shutil.rmtree(folder_path)
+            print(f"Deleted: {folder_path}")
