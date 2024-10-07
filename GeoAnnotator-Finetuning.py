@@ -4,7 +4,7 @@ from datasets import Dataset
 from trl import SFTTrainer
 import pandas as pd
 
-from utilFunctions import clearGGUFDir
+from utilFunctions import clearGGUFDir, clearMainDir
 import argparse
 import json
 
@@ -22,7 +22,7 @@ provider = data["provider"]
 model_name=provider["data"]["model"].split('/')[0]
 
 model, tokenizer = FastLanguageModel.from_pretrained(
-    model_name = f"models/{model_name}",
+    model_name = f"models/{model_name}/gguf",
     dtype = None,
     load_in_4bit = True,
     max_seq_length = 2048,
@@ -104,7 +104,7 @@ trainer = SFTTrainer(
 trainer_stats = trainer.train()
 
 # Modell speichern
-GGUF_PATH=f"models/{model_name}-1/gguf"
+GGUF_PATH=f"models/{model_name}-finetuned/gguf"
 
 model.save_pretrained_gguf(GGUF_PATH, tokenizer, quantization_method = "q4_k_m")
 
@@ -112,7 +112,21 @@ model.save_pretrained_gguf(GGUF_PATH, tokenizer, quantization_method = "q4_k_m")
 clearGGUFDir(GGUF_PATH)
 
 # Save model configuration and tokenizer 
-model.save_pretrained(f"models/{model_name}-1")
-tokenizer.save_pretrained(f"models/{model_name}-1")
+model.save_pretrained(f"models/{model_name}-finetuned")
+tokenizer.save_pretrained(f"models/{model_name}-finetuned")
+
+clearMainDir()
+
+import gc
+import torch
+
+del model
+del model_name
+del dataset
+del formatting_prompts_func
+del alpaca_prompt
+
+gc.collect()
+torch.cuda.empty_cache()
 
 # hf_token="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"

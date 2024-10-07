@@ -85,7 +85,7 @@ def retrain_model(request: TrainingRequest):
             dataset_num_proc = 2,
             packing = False,
             args = TrainingArguments(
-                evaluation_strategy="epoch",
+                eval_strategy="epoch",
                 per_device_eval_batch_size = 2,
                 per_device_train_batch_size = 2,
                 gradient_accumulation_steps = 4,
@@ -113,21 +113,22 @@ def retrain_model(request: TrainingRequest):
         model.save_pretrained_gguf(GGUF_PATH, tokenizer, quantization_method = "q4_k_m")
         
         # Clear GGUF-directory except quantization file
-        clearGGUFDir(GGUF_PATH)
+        # clearGGUFDir(GGUF_PATH)
 
         # Save model configuration and tokenizer 
         model.save_pretrained(f"models/{model_name}-1")
         tokenizer.save_pretrained(f"models/{model_name}-1")
         
         # Clear cache and collect garbage
-        import torch
         import gc
+        import torch
 
         del model
         del model_name
         del dataset
         del formatting_prompts_func
         del alpaca_prompt
+
         gc.collect()
         torch.cuda.empty_cache()
 
