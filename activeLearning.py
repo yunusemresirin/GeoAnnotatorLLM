@@ -16,7 +16,7 @@ def retrain_model_sh(request: TrainingRequest):
         subprocess.run("sbatch jobs/job-1.sh 'data/input_data.json'", check=True , shell=True)
 
 @router.post("/retrain")
-def retrain_model(request: TrainingRequest):
+async def retrain_model(request: TrainingRequest):
     try:
         from unsloth import FastLanguageModel, is_bfloat16_supported
         from utilFunctions import clearGGUFDir, clearMainDir
@@ -113,7 +113,7 @@ def retrain_model(request: TrainingRequest):
         model.save_pretrained_gguf(GGUF_PATH, tokenizer, quantization_method = "q4_k_m")
         
         # Clear GGUF-directory except quantization file
-        # clearGGUFDir(GGUF_PATH)
+        await clearGGUFDir(GGUF_PATH)
 
         # Save model configuration and tokenizer 
         model.save_pretrained(f"models/{model_name}-1")

@@ -1,7 +1,7 @@
 import os
 import shutil
 
-def clearGGUFDir(gguf_path: str, quantization: str="q4_k_m") -> None:
+async def clearGGUFDir(gguf_path: str, quantization: str="q4_k_m") -> None:
     r"""
     Remove unused files when converting model to GGUF-file
 
