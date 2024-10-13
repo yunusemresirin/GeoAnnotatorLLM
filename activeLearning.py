@@ -67,11 +67,10 @@ async def retrain_model(request: TrainingRequest):
             return { "text" : texts }
         pass
 
-        dataset = Dataset.from_pandas(pd.DataFrame(request.feedback))
+        dataset = Dataset.from_pandas(df=pd.DataFrame(request.feedback))
         dataset = dataset.map(formatting_prompts_func, batched = True, load_from_cache_file=False)
         dataset = dataset.train_test_split(test_size=0.2)
 
-        # TrainingArguments - configurations
         train_dataset = dataset['train']
         eval_dataset = dataset['test']
 
