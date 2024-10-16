@@ -25,10 +25,10 @@ async def retrain_model(request: TrainingRequest):
         from trl import SFTTrainer
         import pandas as pd
 
-        model_name=request.provider["data"]["model"].split('/')[0]
+        model_path=f"models/{request.provider["data"]["model"].split('/')[0]}"
 
         model, tokenizer = FastLanguageModel.from_pretrained(
-            model_name = f"models/{model_name}",
+            model_name = model_path,
             dtype = None,
             load_in_4bit = True,
             max_seq_length = 2048
@@ -106,17 +106,19 @@ async def retrain_model(request: TrainingRequest):
 
         trainer_eval_stats = trainer.evaluate()
 
-        # Modell speichern
-        GGUF_PATH=f"models/{model_name}-1/gguf"
-
-        model.save_pretrained_gguf(GGUF_PATH, tokenizer, quantization_method = "q4_k_m")
+        model_path += "-finetuned"
+        # Save model as quantized GGUF-file for hosting purposes
+        model.save_pretrained_gguf(
+            save_directory=model_path + "/gguf", 
+            tokenizer=tokenizer, 
+            quantization_method="q4_k_m"
+        )
         
         # Clear GGUF-directory except quantization file
-        await clearGGUFDir(GGUF_PATH)
+        await clearGGUFDir(model_path + "/gguf")
 
-        # Save model configuration and tokenizer 
-        model.save_pretrained(f"models/{model_name}-1")
-        tokenizer.save_pretrained(f"models/{model_name}-1")
+        # Save model configuration and tokenizer for future finetuning
+        model.save_pretrained(model_path), tokenizer.save_pretrained(model_path)
         
         # Clear cache and collect garbage
         import gc
@@ -133,7 +135,7 @@ async def retrain_model(request: TrainingRequest):
 
         return {
             "message": "Finetuning process completed. Model has been saved.",
-            "trainer_train_stats": trainer_train_stats,
+            "trainer_train_stats": trainer_train_stats[2],
             "trainer_eval_stats": trainer_eval_stats,
             "trainer_args": trainer.args
         }
