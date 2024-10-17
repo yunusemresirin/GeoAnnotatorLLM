@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-import subprocess
 import json
 
 class TrainingRequest(BaseModel):
@@ -8,12 +7,6 @@ class TrainingRequest(BaseModel):
     provider: dict
 
 router = APIRouter()
-
-@router.post("/retrain-sh")
-def retrain_model_sh(request: TrainingRequest):
-    with open("data/input_data.json", 'w') as f:
-        json.dump({ "feedback": request.feedback, "provider": request.provider }, f, indent=2)
-        subprocess.run("sbatch jobs/job-1.sh 'data/input_data.json'", check=True , shell=True)
 
 @router.post("/retrain")
 async def retrain_model(request: TrainingRequest):
@@ -25,7 +18,8 @@ async def retrain_model(request: TrainingRequest):
         from trl import SFTTrainer
         import pandas as pd
 
-        model_path=f"models/{request.provider["data"]["model"].split('/')[0]}"
+        model_name=request.provider["data"]["model"].split('/')[0]
+        model_path=f"models/{model_name}"
 
         model, tokenizer = FastLanguageModel.from_pretrained(
             model_name = model_path,
@@ -64,28 +58,24 @@ async def retrain_model(request: TrainingRequest):
                 output_str = json.dumps(output, indent=2)
                 text = alpaca_prompt.format(input, output_str) + EOS_TOKEN
                 texts.append(text)
-            return { "text" : texts }
+            return { "text" : texts, }
         pass
 
         dataset = Dataset.from_pandas(df=pd.DataFrame(request.feedback))
-        dataset = dataset.map(formatting_prompts_func, batched = True, load_from_cache_file=False)
-        dataset = dataset.train_test_split(test_size=0.2)
-
-        train_dataset = dataset['train']
-        eval_dataset = dataset['test']
+        dataset = dataset.map(formatting_prompts_func, batched=True, load_from_cache_file=False)
 
         trainer = SFTTrainer(
             model = model,
             tokenizer = tokenizer,
             dataset_text_field = "text",
-            train_dataset = train_dataset,
-            eval_dataset=eval_dataset,
+            train_dataset = dataset,
+            eval_dataset = dataset,
             max_seq_length = 2048,
             dataset_num_proc = 2,
             packing = False,
             args = TrainingArguments(
-                eval_strategy="epoch",
                 per_device_eval_batch_size = 2,
+                do_eval=False,
                 per_device_train_batch_size = 2,
                 gradient_accumulation_steps = 4,
                 warmup_steps = 5,
@@ -102,11 +92,11 @@ async def retrain_model(request: TrainingRequest):
             )
         )
 
+        if "finetuned" in model_path: trainer_eval_stats = trainer.evaluate()
+
         trainer_train_stats = trainer.train()
 
-        trainer_eval_stats = trainer.evaluate()
-
-        model_path += "-finetuned"
+        if "finetuned" not in model_path: model_path += "-finetuned"
         # Save model as quantized GGUF-file for hosting purposes
         model.save_pretrained_gguf(
             save_directory=model_path + "/gguf", 
@@ -119,19 +109,6 @@ async def retrain_model(request: TrainingRequest):
 
         # Save model configuration and tokenizer for future finetuning
         model.save_pretrained(model_path), tokenizer.save_pretrained(model_path)
-        
-        # Clear cache and collect garbage
-        import gc
-        import torch
-
-        del model
-        del model_name
-        del dataset
-        del formatting_prompts_func
-        del alpaca_prompt
-
-        gc.collect()
-        torch.cuda.empty_cache()
 
         return {
             "message": "Finetuning process completed. Model has been saved.",
@@ -142,4 +119,19 @@ async def retrain_model(request: TrainingRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Retrain-Job failed: {str(e)}")
     finally:
+        # Clear cache and collect garbage
+        import gc
+        import torch
+
+        del model_name
+        del model_path
+        del model
+        del tokenizer
+        del dataset
+        del alpaca_prompt
+        del formatting_prompts_func
+
+        gc.collect()
+        torch.cuda.empty_cache()
+
         clearMainDir()
