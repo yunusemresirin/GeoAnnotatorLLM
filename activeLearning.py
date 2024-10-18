@@ -246,13 +246,12 @@ async def retrain_model(request: TrainingRequest):
         import gc
         import torch
 
-        del model_name
-        del model_path
-        del model
-        del tokenizer
-        del dataset
-        del alpaca_prompt
-        del formatting_prompts_func
+        if model_path: del model_path
+        if model: del model
+        if tokenizer: del tokenizer
+        if dataset: del dataset
+        if alpaca_prompt: del alpaca_prompt
+        if formatting_prompts_func: del formatting_prompts_func
 
         gc.collect() 
         torch.cuda.empty_cache()
