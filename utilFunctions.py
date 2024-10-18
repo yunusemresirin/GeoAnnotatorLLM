@@ -1,5 +1,6 @@
 import os
 import shutil
+import subprocess
 
 async def clearGGUFDir(gguf_path: str, quantization: str="q4_k_m") -> None:
     r"""
@@ -49,7 +50,7 @@ async def clearGGUFDir(gguf_path: str, quantization: str="q4_k_m") -> None:
 
     print("Deletion process completed!")
 
-def clearMainDir() -> None:
+async def clearMainDir() -> None:
     r"""
     Remove temporary folders by unsloth and checkpoints of the SFTTrainer
     """
@@ -61,3 +62,15 @@ def clearMainDir() -> None:
         if os.path.isdir(folder_path) and any(sub in folder_name for sub in ["unsloth", "outputs"]):
             shutil.rmtree(folder_path)
             print(f"Deleted: {folder_path}")
+ 
+async def terminate_gpu_processes():
+    processes = subprocess.check_output(['nvidia-smi', '--query-compute-apps=pid', '--format=csv,noheader']).decode('utf-8')
+    process_list = processes.strip().split("\n")
+
+    for pid in process_list:
+        if pid:
+            try:
+                print(f"Terminating process {pid}")
+                os.kill(int(pid), 9)
+            except Exception as e:
+                print(f"Could not terminate process {pid}: {str(e)}")
