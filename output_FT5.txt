@@ -1,26 +1,26 @@
-precision:	0.7347560975609756
-recall: 	0.6409574468085106
-f1_score:	0.6846590909090909
+precision:	0.6200417536534447
+recall: 	0.8048780487804879
+f1_score:	0.7004716981132075
 
-A@k - 10:	34.44
-A@k - 161:	89.63
+A@k - 10:	45.12
+A@k - 161:	90.57
 
 {
   "message": "Finetuning process completed. Model has been saved.",
   "trainer_train_stats": {
-    "train_runtime": 341.8705,
-    "train_samples_per_second": 0.585,
-    "train_steps_per_second": 0.07,
-    "total_flos": 1.7766896342532096e+16,
-    "train_loss": 0.8007044307887554,
+    "train_runtime": 339.7002,
+    "train_samples_per_second": 0.589,
+    "train_steps_per_second": 0.071,
+    "total_flos": 1.7632320597491712e+16,
+    "train_loss": 0.6476899472375711,
     "epoch": 1.92
   },
   "trainer_eval_stats": {
-    "eval_loss": 1.4804614782333374,
-    "eval_model_preparation_time": 0.0075,
-    "eval_runtime": 55.8547,
-    "eval_samples_per_second": 1.79,
-    "eval_steps_per_second": 0.895
+    "eval_loss": 1.1333094835281372,
+    "eval_model_preparation_time": 0.0095,
+    "eval_runtime": 55.6275,
+    "eval_samples_per_second": 1.798,
+    "eval_steps_per_second": 0.899
   },
   "trainer_args": {
     "output_dir": "outputs",
@@ -53,7 +53,7 @@ A@k - 161:	89.63
     "log_level": "passive",
     "log_level_replica": "warning",
     "log_on_each_node": true,
-    "logging_dir": "outputs/runs/Oct24_13-02-24_wr14",
+    "logging_dir": "outputs/runs/Oct24_15-23-49_wr14",
     "logging_strategy": "steps",
     "logging_first_step": false,
     "logging_steps": 1,
@@ -168,4 +168,4 @@ A@k - 161:	89.63
   }
 }
 
-elapsed_time: 672.0312097072601
+elapsed_time: 664.4481244087219
