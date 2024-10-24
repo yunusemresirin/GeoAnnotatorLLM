@@ -5,3 +5,5 @@ llama.cpp/
 outputs/
 
 models/
+data/
+jobs/
