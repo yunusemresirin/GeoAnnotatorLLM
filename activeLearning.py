@@ -21,7 +21,8 @@ async def retrain_model(request: TrainingRequest):
         from peft import LoraConfig, get_peft_model
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
-        model_path=f"models/{request.provider['data']['model'].split('/')[0]}"
+        model_name=request.provider['data']['model'].split('/')[0]
+        model_path=f"models/{model_name}"
 
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
@@ -140,10 +141,11 @@ async def retrain_model(request: TrainingRequest):
         from trl import SFTTrainer
         from datasets import Dataset
         from transformers import TrainingArguments
-        from utilFunctions import clearGGUFDir, clearMainDir
         from unsloth import FastLanguageModel, is_bfloat16_supported
+        from utilFunctions import clearGGUFDir, clearMainDir, get_next_version
 
-        model_path=f"models/{request.provider['data']['model'].split('/')[0]}"
+        model_name:str=request.provider['data']['model'].split('/')[0]
+        model_path=f"models/{model_name}"
 
         model, tokenizer = FastLanguageModel.from_pretrained(
             model_name = model_path,
@@ -157,7 +159,7 @@ async def retrain_model(request: TrainingRequest):
             r = 16,
             target_modules = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
             lora_alpha = 16,
-            lora_dropout = 0,
+            lora_dropout = 0.1,
             bias = "none",
             use_gradient_checkpointing = "unsloth",
             random_state = 3407,
@@ -165,7 +167,7 @@ async def retrain_model(request: TrainingRequest):
             loftq_config = None,
         )
 
-        alpaca_prompt = """You are an assitant that strictly extracts geographic references from the input. For each location, provide the place-name (exactly as in the text), the latitude and the longitude of the place as a json-object, like {{ name: place-name, position: [latitude, longitude] }}. Create a json-list out of these objects. In the list, there should be no repetitive places with the same place-name. Please only return the value with no explanation or further information and as a normal text without labeling it as json.
+        alpaca_prompt = """You are an assitant that strictly extracts geographic references from the user-input. For each location, provide the place-name (exactly as mentioned in the user-input), the latitude and the longitude of the place as a json-object, like {{ name: place-name, position: [latitude, longitude] }}. Create a json-list out of these objects. In the list, there should be no repetitive places with the same place-name. Do not extract or provide places that are not mentioned in the user-input. The positions should be as precise as possible. Please only return the json-string with no explanation or further information and as a normal text without labeling it as json.
 
         ### Input:
         {}
@@ -203,7 +205,7 @@ async def retrain_model(request: TrainingRequest):
                 per_device_train_batch_size = 2,
                 gradient_accumulation_steps = 4,
                 warmup_steps = 5,
-                num_train_epochs = 3,
+                num_train_epochs = 2,
                 learning_rate = 2e-4,
                 fp16 = not is_bfloat16_supported(),
                 bf16 = is_bfloat16_supported(),
@@ -216,11 +218,15 @@ async def retrain_model(request: TrainingRequest):
             )
         )
 
-        trainer_eval_stats = trainer.evaluate() if "finetuned" in model_path else None
+        trainer_eval_stats = trainer.evaluate() if "finetuned" in model_name else None
 
         trainer_train_stats = trainer.train()
 
-        if "finetuned" not in model_path: model_path += "-finetuned"
+        if "finetuned" not in model_name: model_path += "-finetuned-1"
+        else:
+            version = await get_next_version(model_name)
+            model_name = f"{'-'.join(model_name.split('-')[:-1])}-{version}"
+            model_path = f"models/{model_name}"
         # Save model configuration and tokenizer for future finetuning
         model.save_pretrained(model_path), tokenizer.save_pretrained(model_path)
         # Save model as quantized GGUF-file for hosting purposes
@@ -246,6 +252,7 @@ async def retrain_model(request: TrainingRequest):
         import gc
         import torch
 
+        if model_name: del model_name
         if model_path: del model_path
         if model: del model
         if tokenizer: del tokenizer

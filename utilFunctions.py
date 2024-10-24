@@ -62,7 +62,32 @@ async def clearMainDir() -> None:
         if os.path.isdir(folder_path) and any(sub in folder_name for sub in ["unsloth", "outputs"]):
             shutil.rmtree(folder_path)
             print(f"Deleted: {folder_path}")
- 
+
+async def get_next_version(base_name) -> int:
+    existing_versions = []
+
+    base_without_version = '-'.join(base_name.split('-')[:-1])
+    
+    try:
+        current_version = int(base_name.split('-')[-1])
+    except ValueError:
+        current_version = 1  
+
+    for model_name in os.listdir("models"):
+        if model_name.startswith(base_without_version):
+            try:
+                version = int(model_name.split('-')[-1])  
+                existing_versions.append(version)
+            except (IndexError, ValueError):
+                pass  
+
+    if existing_versions:
+        next_version = max(existing_versions) + 1
+    else:
+        next_version = current_version  
+    
+    return next_version
+
 async def terminate_gpu_processes():
     processes = subprocess.check_output(['nvidia-smi', '--query-compute-apps=pid', '--format=csv,noheader']).decode('utf-8')
     process_list = processes.strip().split("\n")
