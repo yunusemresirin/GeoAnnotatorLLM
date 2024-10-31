@@ -16,9 +16,9 @@ async def retrain_model(request: TrainingRequest):
         import pandas as pd
         from trl import SFTTrainer
         from datasets import Dataset
-        from utilFunctions import clearMainDir
         from transformers import TrainingArguments
         from peft import LoraConfig, get_peft_model
+        from utilFunctions import clearMainDir, get_next_version
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
         model_name=request.provider['data']['model'].split('/')[0]
@@ -83,7 +83,7 @@ async def retrain_model(request: TrainingRequest):
                 per_device_train_batch_size = 2,
                 gradient_accumulation_steps = 4,
                 warmup_steps = 5,
-                num_train_epochs = 3,
+                num_train_epochs = 2,
                 learning_rate = 2e-4,
                 fp16 = True,
                 logging_steps = 1,
@@ -99,7 +99,11 @@ async def retrain_model(request: TrainingRequest):
 
         trainer_train_stats = trainer.train()
 
-        if "finetuned" not in model_path: model_path += "-finetuned"
+        if "finetuned" not in model_name: model_path += "-finetuned-1"
+        else:
+            version = await get_next_version(model_name)
+            model_name = f"{'-'.join(model_name.split('-')[:-1])}-{version}"
+            model_path = f"models/{model_name}"
         # Save model configuration and tokenizer for future finetuning
         model.merge_and_unload(), model.save_pretrained(model_path), tokenizer.save_pretrained(model_path)
 
@@ -144,8 +148,8 @@ async def retrain_model(request: TrainingRequest):
         from unsloth import FastLanguageModel, is_bfloat16_supported
         from utilFunctions import clearGGUFDir, clearMainDir, get_next_version
 
-        model_name:str=request.provider['data']['model'].split('/')[0]
-        model_path=f"models/{model_name}"
+        model_name:str = request.provider['data']['model'].split('/')[0]
+        model_path = f"models/{model_name}"
 
         model, tokenizer = FastLanguageModel.from_pretrained(
             model_name = model_path,
@@ -157,7 +161,8 @@ async def retrain_model(request: TrainingRequest):
         model = FastLanguageModel.get_peft_model(
             model,
             r = 16,
-            target_modules = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+            target_modules = ["q_proj", "k_proj", "v_proj", "o_proj", 
+                              "gate_proj", "up_proj", "down_proj"],
             lora_alpha = 16,
             lora_dropout = 0.1,
             bias = "none",
