@@ -53,5 +53,5 @@ To host fine-tune models, the configuration and quantization of these models are
 
 To install a model, run:
 ```bash
-(GeoSenseAnnotatorLLMs) python3 Install-Llama-3-1-8B.py
+(GeoSenseAnnotatorLLM) python3 Install-Llama-3-1-8B.py
 ```
