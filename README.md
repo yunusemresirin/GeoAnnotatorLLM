@@ -1,6 +1,7 @@
-# GeoAnnotator-LLM
+# GeoSense Annotator-LLM
+
 ## Purpose
-This repository is the trainings-server of the GeoAnnotator (GA) for LLMs. It is used for hosting
+This repository is the trainings-server of the GeoSense Annotator (GA) for LLMs. It is used for hosting
 and finetuning Large Language Models.
 
 ## Requirements
@@ -24,13 +25,13 @@ On Linux only
 
 ### 3. Installing Dependencies
 ```bash
-conda create -n GeoAnnotatorLLM \
+conda create -n GeoSenseAnnotatorLLM \
     python=3.10 \
     pytorch-cuda=12.1 \
     pytorch cudatoolkit xformers -c pytorch -c nvidia -c xformers \
     -y
 
-conda activate GeoAnnotatorLLM
+conda activate GeoSenseAnnotatorLLM
 
 pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
 
@@ -38,9 +39,9 @@ pip install --no-deps "trl<0.9.0" peft accelerate bitsandbytes
 
 pip install fastapi "uvicorn[standard]"
 ```
-or with YAML-file GeoAnnotatorLLM.yml:
+or with YAML-file GeoSenseAnnotatorLLM.yml:
 ```bash
-conda env create --file GeoAnnotatorLLM.yml --name GeoAnnotatorLLM
+conda env create --file GeoSenseAnnotatorLLM.yml --name GeoSenseAnnotatorLLM
 ```
 
 We also recommend installing the Host-Client LM Studio to host the models.
@@ -52,5 +53,5 @@ To host fine-tune models, the configuration and quantization of these models are
 
 To install a model, run:
 ```bash
-(GeoAnnotatorLLMs) python3 Install-Llama-3-1-8B.py
+(GeoSenseAnnotatorLLMs) python3 Install-Llama-3-1-8B.py
 ```

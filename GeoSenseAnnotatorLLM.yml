@@ -1,4 +1,4 @@
-name: GeoAnnotatorLLM
+name: GeoSenseAnnotatorLLM
 channels:
   - xformers
   - pytorch
