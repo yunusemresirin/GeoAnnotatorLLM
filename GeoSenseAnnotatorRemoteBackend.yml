@@ -1,4 +1,4 @@
-name: GeoSenseAnnotatorLLM
+name: GeoSenseAnnotatorRemoteBackend
 channels:
   - xformers
   - pytorch
